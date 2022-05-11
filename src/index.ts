@@ -6,6 +6,7 @@ import { SimpleInventoryValidator } from './implementations/SimpleInventoryValid
 import { SqliteInventoryRepository } from './implementations/SqliteInventoryRepository'
 import { createInventory } from './usecases/createInventory'
 import { getInventory } from './usecases/getInventory'
+import { listInventory } from './usecases/listInventory'
 
 // Construct implementations classes for dependency injection
 const weatherApi = new OpenWeatherWeatherApi()
@@ -40,7 +41,33 @@ async function main() {
     return res.status(201).json({ inventory })
   })
 
-  // app.get('/v1/inventory')
+  app.get('/v1/inventory', async (req, res) => {
+    const [inventories, serverError] = await listInventory(
+      invRepo,
+      invValidator,
+      { deleted: false }
+    )
+
+    if (serverError) {
+      return res.status(500).json({ serverError: true })
+    }
+
+    return res.status(200).json({ inventories })
+  })
+
+  app.get('/v1/inventory/deleted', async (req, res) => {
+    const [inventories, serverError] = await listInventory(
+      invRepo,
+      invValidator,
+      { deleted: true }
+    )
+
+    if (serverError) {
+      return res.status(500).json({ serverError: true })
+    }
+
+    return res.status(200).json({ inventories })
+  })
 
   app.get('/v1/inventory/:id', async (req, res) => {
     const [inventory, validationErrors, serverError] = await getInventory(
@@ -67,8 +94,6 @@ async function main() {
   // app.patch('/v1/inventory/:id')
 
   // app.delete('/v1/inventory/:id')
-
-  // app.get('/v1/inventory/deleted')
 
   // app.post('/v1/inventory/:id/deleted')
 

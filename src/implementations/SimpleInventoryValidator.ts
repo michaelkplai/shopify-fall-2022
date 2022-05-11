@@ -72,11 +72,20 @@ export class SimpleInventoryValidator implements InventoryValidator {
     return Object.keys(errors).length ? errors : null
   }
 
-  validateList(
+  async validateList(
     input: ListInventoryInput
   ): Promise<ValidationErrors<ListInventoryInput> | null> {
-    throw new Error('Method not implemented.')
+    const errors: ValidationErrors<ListInventoryInput> = {}
+
+    if (input.deleted !== undefined) {
+      if (typeof input.deleted !== 'boolean') {
+        errors.deleted = ValidationError.BOOLEAN
+      }
+    }
+
+    return Object.keys(errors).length ? errors : null
   }
+
   validateDelete(
     input: DeleteInventoryInput
   ): Promise<ValidationErrors<DeleteInventoryInput> | null> {

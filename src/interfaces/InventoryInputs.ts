@@ -18,7 +18,7 @@ export interface GetInventoryInput {
 }
 
 export interface ListInventoryInput {
-  includeDeleted?: boolean
+  deleted?: boolean
 }
 
 export interface DeleteInventoryInput {

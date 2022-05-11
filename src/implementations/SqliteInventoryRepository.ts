@@ -115,9 +115,30 @@ export class SqliteInventoryRepository implements InventoryRepository {
     }
   }
 
-  list(input: ListInventoryInput): Promise<[Inventory[], boolean]> {
+  async list(input: ListInventoryInput): Promise<[Inventory[], boolean]> {
+    const deleted = input.deleted ? 1 : 0
+
+    try {
+      const rows = await this.db.all(
+        `SELECT * FROM inventory WHERE deleted = ?`,
+        deleted
+      )
+
+      const adaptedRows = rows.map(this.adapt)
+      if (adaptedRows.includes(null)) {
+        return [[], true]
+      }
+
+      // Guarenteed to only contain Inventory objects since otherwise we return above
+      return [adaptedRows as Inventory[], false]
+    } catch (e) {
+      console.error('Something went wrong listing the inventory', e)
+      return [[], true]
+    }
+
     throw new Error('Method not implemented.')
   }
+
   delete(input: DeleteInventoryInput): Promise<[Inventory | null, boolean]> {
     throw new Error('Method not implemented.')
   }
