@@ -56,6 +56,7 @@ export class SimpleInventoryValidator implements InventoryValidator {
   ): Promise<ValidationErrors<UpdateInventoryInput> | null> {
     throw new Error('Method not implemented.')
   }
+
   async validateGet(
     input: any
   ): Promise<ValidationErrors<GetInventoryInput> | null> {
@@ -73,7 +74,7 @@ export class SimpleInventoryValidator implements InventoryValidator {
   }
 
   async validateList(
-    input: ListInventoryInput
+    input: any
   ): Promise<ValidationErrors<ListInventoryInput> | null> {
     const errors: ValidationErrors<ListInventoryInput> = {}
 
@@ -86,11 +87,30 @@ export class SimpleInventoryValidator implements InventoryValidator {
     return Object.keys(errors).length ? errors : null
   }
 
-  validateDelete(
-    input: DeleteInventoryInput
+  async validateDelete(
+    input: any
   ): Promise<ValidationErrors<DeleteInventoryInput> | null> {
-    throw new Error('Method not implemented.')
+    const errors: ValidationErrors<DeleteInventoryInput> = {}
+
+    if (input.id === undefined) {
+      errors.id = ValidationError.REQUIRED
+    } else if (typeof input.id !== 'string') {
+      errors.id = ValidationError.STRING
+    } else if (input.id === '') {
+      errors.id = ValidationError.REQUIRED
+    }
+
+    if (input.deletionMessage === undefined) {
+      errors.deletionMessage = ValidationError.REQUIRED
+    } else if (typeof input.deletionMessage !== 'string') {
+      errors.deletionMessage = ValidationError.STRING
+    } else if (input.deletionMessage === '') {
+      errors.deletionMessage = ValidationError.REQUIRED
+    }
+
+    return Object.keys(errors).length ? errors : null
   }
+
   validateUndelete(
     input: UndeleteInventoryInput
   ): Promise<ValidationErrors<UndeleteInventoryInput> | null> {

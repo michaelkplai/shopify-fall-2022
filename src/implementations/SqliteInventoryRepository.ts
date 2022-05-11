@@ -139,9 +139,44 @@ export class SqliteInventoryRepository implements InventoryRepository {
     throw new Error('Method not implemented.')
   }
 
-  delete(input: DeleteInventoryInput): Promise<[Inventory | null, boolean]> {
-    throw new Error('Method not implemented.')
+  async delete(
+    input: DeleteInventoryInput
+  ): Promise<[Inventory | null, boolean]> {
+    // Rough outline
+    // 1. Update an inventory
+    // 2. Return if it does not exist
+    // 3. If it does exist fetch and return, if fails return serverError
+
+    let rowsChanged = 0
+
+    try {
+      const res = await this.db.run(
+        `
+      UPDATE inventory
+      SET deleted = ?, deletion_comment = ?
+      WHERE id = ?;`,
+        [1, input.deletionMessage, input.id]
+      )
+
+      rowsChanged = res.changes || 0
+    } catch (e) {
+      console.error('Something went wrong deleting the inventory', e)
+      return [null, true]
+    }
+
+    if (rowsChanged < 1) {
+      return [null, false]
+    }
+
+    const [inventory, serverError] = await this.fetch({ id: input.id })
+    if (serverError || !inventory) {
+      console.error('Something went wrong fetching the newly deleted inventory')
+      return [null, true]
+    }
+
+    return [inventory, false]
   }
+
   restore(input: UndeleteInventoryInput): Promise<[Inventory | null, boolean]> {
     throw new Error('Method not implemented.')
   }
