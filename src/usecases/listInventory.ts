@@ -13,14 +13,14 @@ export async function listInventory(
 ): Promise<
   [Inventory[], ValidationErrors<ListInventoryInput> | null, boolean]
 > {
-  // const validationError = await invValidator.validateList(input)
-  // if (validationError) {
-  //   return [[], validationError, false]
-  // }
+  const validationError = await invValidator.validateList(input)
+  if (validationError) {
+    return [[], validationError, false]
+  }
 
-  // const validatedInput = <ListInventoryInput>input
+  const validatedInput = <ListInventoryInput>input
 
-  const [inventories, serverError] = await invRepo.list({ deleted: false })
+  const [inventories, serverError] = await invRepo.list(validatedInput)
 
   if (serverError) {
     return [[], null, true]

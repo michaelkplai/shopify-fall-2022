@@ -42,13 +42,14 @@ async function main() {
   })
 
   app.get('/v1/inventory', async (req, res) => {
-    const [inventories, serverError] = await listInventory(
+    const [inventories, validationErrors, serverError] = await listInventory(
       invRepo,
       invValidator,
       { deleted: false }
     )
 
-    if (serverError) {
+    // Input is not user specified
+    if (validationErrors || serverError) {
       return res.status(500).json({ serverError: true })
     }
 
@@ -56,13 +57,14 @@ async function main() {
   })
 
   app.get('/v1/inventory/deleted', async (req, res) => {
-    const [inventories, serverError] = await listInventory(
+    const [inventories, validationErrors, serverError] = await listInventory(
       invRepo,
       invValidator,
       { deleted: true }
     )
 
-    if (serverError) {
+    // Input is not user specified
+    if (validationErrors || serverError) {
       return res.status(500).json({ serverError: true })
     }
 
