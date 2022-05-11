@@ -56,9 +56,22 @@ export class SimpleInventoryValidator implements InventoryValidator {
   ): Promise<ValidationErrors<UpdateInventoryInput> | null> {
     throw new Error('Method not implemented.')
   }
-  validateGet(input: any): Promise<ValidationErrors<GetInventoryInput> | null> {
-    throw new Error('Method not implemented.')
+  async validateGet(
+    input: any
+  ): Promise<ValidationErrors<GetInventoryInput> | null> {
+    const errors: ValidationErrors<GetInventoryInput> = {}
+
+    if (input.id === undefined) {
+      errors.id = ValidationError.REQUIRED
+    } else if (typeof input.id !== 'string') {
+      errors.id = ValidationError.STRING
+    } else if (input.id === '') {
+      errors.id = ValidationError.REQUIRED
+    }
+
+    return Object.keys(errors).length ? errors : null
   }
+
   validateList(
     input: ListInventoryInput
   ): Promise<ValidationErrors<ListInventoryInput> | null> {

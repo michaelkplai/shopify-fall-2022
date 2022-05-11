@@ -5,6 +5,7 @@ import { OpenWeatherWeatherApi } from './implementations/OpenWeatherWeatherApi'
 import { SimpleInventoryValidator } from './implementations/SimpleInventoryValidator'
 import { SqliteInventoryRepository } from './implementations/SqliteInventoryRepository'
 import { createInventory } from './usecases/createInventory'
+import { getInventory } from './usecases/getInventory'
 
 // Construct implementations classes for dependency injection
 const weatherApi = new OpenWeatherWeatherApi()
@@ -41,7 +42,27 @@ async function main() {
 
   // app.get('/v1/inventory')
 
-  // app.get('/v1/inventory/:id')
+  app.get('/v1/inventory/:id', async (req, res) => {
+    const [inventory, validationErrors, serverError] = await getInventory(
+      invRepo,
+      invValidator,
+      { id: req.params.id }
+    )
+
+    if (serverError) {
+      return res.status(500).json({ serverError: true })
+    }
+
+    if (validationErrors) {
+      return res.status(400).json({ validationErrors })
+    }
+
+    if (!inventory) {
+      return res.status(404).json({ notFound: true })
+    }
+
+    return res.status(200).json({ inventory })
+  })
 
   // app.patch('/v1/inventory/:id')
 
