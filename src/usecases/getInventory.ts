@@ -6,12 +6,14 @@ import {
   ValidationErrors
 } from '../interfaces/InventoryValidator'
 
+type ServerError = boolean
+
 export async function getInventory(
   invRepo: InventoryRepository,
   invValidator: InventoryValidator,
   input: any
 ): Promise<
-  [Inventory | null, ValidationErrors<GetInventoryInput> | null, boolean]
+  [Inventory | null, ValidationErrors<GetInventoryInput> | null, ServerError]
 > {
   const validationError = await invValidator.validateGet(input)
   if (validationError) {
@@ -20,9 +22,10 @@ export async function getInventory(
 
   const validatedInput = <GetInventoryInput>input
 
-  const [inventory, serverError] = await invRepo.fetch(validatedInput)
+  const [inventory, serverError] = await invRepo.get(validatedInput)
   if (serverError) {
     return [null, null, true]
   }
+
   return [inventory, null, false]
 }

@@ -19,10 +19,10 @@ export class OpenWeatherWeatherApi implements WeatherApi {
         return ['', true]
       }
 
-      const kelvinToCelciusOffset = -273.15
-      const currentTemp = (json.main.temp + kelvinToCelciusOffset).toFixed(0)
+      const kelvinToCelsiusOffset = -273.15
+      const currentTemp = (json.main.temp + kelvinToCelsiusOffset).toFixed(0)
 
-      return [`Currently ${currentTemp} degrees Celcius with `, false]
+      return [`Currently ${currentTemp} degrees Celsius`, false]
     } catch (e) {
       console.error('Something went wrong fetching the weather', e)
       return ['', true]

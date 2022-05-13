@@ -20,16 +20,12 @@ export async function createInventory(
     return [null, validationError, false]
   }
 
-  // Assert the input is of the correct type
   const validatedInput = <CreateInventoryInput>input
 
   const [inventory, serverError] = await invRepo.create(validatedInput)
-
   if (serverError || !inventory) {
     return [null, null, true]
   }
-
-  // TODO fetch weather API and populate the inventory object before returning
 
   return [inventory, null, false]
 }

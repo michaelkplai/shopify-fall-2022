@@ -1,9 +1,7 @@
-Server errors (500) in interfaces
+[x] Finish CRUD
+[x] Implement weather API
+[x] Refactor API
 
-[] Explain stack used
-[] Finish CRUD
-[] Implement weather API
 [] Frontend
-[] Document API
-[] Refactor
+[] Documentation
 [] Host on replit

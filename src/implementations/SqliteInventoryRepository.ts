@@ -67,8 +67,10 @@ export class SqliteInventoryRepository implements InventoryRepository {
   ): Promise<[Inventory | null, boolean]> {
     try {
       const res = await this.db.run(
-        `INSERT INTO inventory(name, stock, city, deleted, deletion_comment)
-        VALUES (?, ?, ?, 0, '');`,
+        `INSERT INTO
+          inventory(name, stock, city, deleted, deletion_comment)
+        VALUES
+          (?, ?, ?, 0, '');`,
         [input.name, input.stock, input.city]
       )
 
@@ -78,7 +80,7 @@ export class SqliteInventoryRepository implements InventoryRepository {
         return [null, true]
       }
 
-      const [inventory, serverError] = await this.fetch({ id: id.toString() })
+      const [inventory, serverError] = await this.get({ id: id.toString() })
       if (serverError || !inventory) {
         console.error(
           'Something went wrong fetching the newly created inventory'
@@ -93,46 +95,15 @@ export class SqliteInventoryRepository implements InventoryRepository {
     }
   }
 
-  async update(
-    input: UpdateInventoryInput
-  ): Promise<[Inventory | null, boolean]> {
-    let rowsChanged = 0
-
-    try {
-      // Perform partial update
-      const res = await this.db.run(
-        `UPDATE
-          inventory
-        SET
-          name = COALESCE(?, name), stock = COALESCE(?, stock), city = COALESCE(?, city)
-        WHERE
-          inventory.id = ?;`,
-        [input.name, input.stock, input.city, input.id]
-      )
-
-      rowsChanged = res.changes || 0
-    } catch (e) {
-      console.error('Something went wrong updating the inventory', e)
-      return [null, true]
-    }
-
-    if (rowsChanged < 1) {
-      return [null, false]
-    }
-
-    const [inventory, serverError] = await this.fetch({ id: input.id })
-    if (serverError || !inventory) {
-      console.error('Something went wrong fetching the newly updated inventory')
-      return [null, true]
-    }
-
-    return [inventory, false]
-  }
-
-  async fetch(input: GetInventoryInput): Promise<[Inventory | null, boolean]> {
+  async get(input: GetInventoryInput): Promise<[Inventory | null, boolean]> {
     try {
       const row = await this.db.get(
-        `SELECT * FROM inventory WHERE id = ?`,
+        `SELECT
+          *
+        FROM
+          inventory
+        WHERE
+          id = ?`,
         input.id
       )
 
@@ -156,11 +127,14 @@ export class SqliteInventoryRepository implements InventoryRepository {
 
     try {
       const rows = await this.db.all(
-        `SELECT * FROM inventory WHERE deleted = ?`,
+        `SELECT
+          *
+        FROM
+          inventory
+        WHERE
+          deleted = ?`,
         deleted
       )
-
-      console.log(rows)
 
       const adaptedRows = await this.adaptMultiple(rows)
       if (!adaptedRows) {
@@ -175,23 +149,56 @@ export class SqliteInventoryRepository implements InventoryRepository {
     }
   }
 
+  async update(
+    input: UpdateInventoryInput
+  ): Promise<[Inventory | null, boolean]> {
+    let rowsChanged = 0
+
+    try {
+      // Perform partial update for any fields that are defined
+      const res = await this.db.run(
+        `UPDATE
+          inventory
+        SET
+          name = COALESCE(?, name), stock = COALESCE(?, stock), city = COALESCE(?, city)
+        WHERE
+          inventory.id = ?;`,
+        [input.name, input.stock, input.city, input.id]
+      )
+
+      rowsChanged = res.changes || 0
+    } catch (e) {
+      console.error('Something went wrong updating the inventory', e)
+      return [null, true]
+    }
+
+    if (rowsChanged < 1) {
+      return [null, false]
+    }
+
+    const [inventory, serverError] = await this.get({ id: input.id })
+    if (serverError || !inventory) {
+      console.error('Something went wrong fetching the newly updated inventory')
+      return [null, true]
+    }
+
+    return [inventory, false]
+  }
+
   async delete(
     input: DeleteInventoryInput
   ): Promise<[Inventory | null, boolean]> {
-    // Rough outline
-    // 1. Update an inventory
-    // 2. Return if it does not exist
-    // 3. If it does exist fetch and return, if fails return serverError
-
     let rowsChanged = 0
 
     try {
       const res = await this.db.run(
-        `
-      UPDATE inventory
-      SET deleted = ?, deletion_comment = ?
-      WHERE id = ?;`,
-        [1, input.deletionMessage, input.id]
+        `UPDATE
+          inventory
+        SET
+          deleted = ?, deletion_comment = ?
+        WHERE
+          id = ?;`,
+        [1, input.deletionComment, input.id]
       )
 
       rowsChanged = res.changes || 0
@@ -204,7 +211,7 @@ export class SqliteInventoryRepository implements InventoryRepository {
       return [null, false]
     }
 
-    const [inventory, serverError] = await this.fetch({ id: input.id })
+    const [inventory, serverError] = await this.get({ id: input.id })
     if (serverError || !inventory) {
       console.error('Something went wrong fetching the newly deleted inventory')
       return [null, true]
@@ -220,15 +227,18 @@ export class SqliteInventoryRepository implements InventoryRepository {
 
     try {
       const res = await this.db.run(
-        `UPDATE inventory
-        SET deleted = 0, deletion_comment = ''
-        WHERE id = ?;`,
+        `UPDATE
+          inventory
+        SET
+          deleted = 0, deletion_comment = ''
+        WHERE
+          id = ?;`,
         [input.id]
       )
 
       rowsChanged = res.changes || 0
     } catch (e) {
-      console.error('Something went wrong updating the inventory', e)
+      console.error('Something went wrong restoring the inventory', e)
       return [null, true]
     }
 
@@ -236,9 +246,11 @@ export class SqliteInventoryRepository implements InventoryRepository {
       return [null, false]
     }
 
-    const [inventory, serverError] = await this.fetch({ id: input.id })
+    const [inventory, serverError] = await this.get({ id: input.id })
     if (serverError || !inventory) {
-      console.error('Something went wrong fetching the newly updated inventory')
+      console.error(
+        'Something went wrong fetching the newly restoring inventory'
+      )
       return [null, true]
     }
 
@@ -256,6 +268,7 @@ export class SqliteInventoryRepository implements InventoryRepository {
 
   private async adapt(row: any): Promise<Inventory | null> {
     if (!isSqliteInventory(row)) {
+      console.error('Row does not match the expected schema')
       return null
     }
 
@@ -283,7 +296,6 @@ export class SqliteInventoryRepository implements InventoryRepository {
   private async adaptMultiple(rows: any[]): Promise<Inventory[] | null> {
     for (const row of rows) {
       if (!isSqliteInventory(row)) {
-        console.log(row)
         console.error('Some rows do not match the expected schema')
         return null
       }

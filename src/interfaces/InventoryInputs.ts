@@ -6,13 +6,6 @@ export interface CreateInventoryInput {
   city: City
 }
 
-export interface UpdateInventoryInput {
-  id: string
-  name?: string
-  stock?: string
-  city?: City
-}
-
 export interface GetInventoryInput {
   id: string
 }
@@ -21,9 +14,16 @@ export interface ListInventoryInput {
   deleted?: boolean
 }
 
+export interface UpdateInventoryInput {
+  id: string
+  name?: string
+  stock?: string
+  city?: City
+}
+
 export interface DeleteInventoryInput {
   id: string
-  deletionMessage: string
+  deletionComment: string
 }
 
 export interface RestoreInventoryInput {

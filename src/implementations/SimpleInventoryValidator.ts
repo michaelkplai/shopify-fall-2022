@@ -42,10 +42,38 @@ export class SimpleInventoryValidator implements InventoryValidator {
       errors.city = ValidationError.REQUIRED
     } else if (typeof input.city !== 'string') {
       errors.city = ValidationError.STRING
-    } else if (input.city === '') {
-      errors.city = ValidationError.NON_EMPTY
     } else if (!isValidCity(input.city)) {
       errors.city = ValidationError.CITY_UNAVAILABLE
+    }
+
+    return Object.keys(errors).length ? errors : null
+  }
+
+  async validateGet(
+    input: any
+  ): Promise<ValidationErrors<GetInventoryInput> | null> {
+    const errors: ValidationErrors<GetInventoryInput> = {}
+
+    if (input.id === undefined) {
+      errors.id = ValidationError.REQUIRED
+    } else if (typeof input.id !== 'string') {
+      errors.id = ValidationError.STRING
+    } else if (input.id === '') {
+      errors.id = ValidationError.NON_EMPTY
+    }
+
+    return Object.keys(errors).length ? errors : null
+  }
+
+  async validateList(
+    input: any
+  ): Promise<ValidationErrors<ListInventoryInput> | null> {
+    const errors: ValidationErrors<ListInventoryInput> = {}
+
+    if (input.deleted !== undefined) {
+      if (typeof input.deleted !== 'boolean') {
+        errors.deleted = ValidationError.BOOLEAN
+      }
     }
 
     return Object.keys(errors).length ? errors : null
@@ -83,40 +111,8 @@ export class SimpleInventoryValidator implements InventoryValidator {
     if (input.city !== undefined) {
       if (typeof input.city !== 'string') {
         errors.city = ValidationError.STRING
-      } else if (input.city === '') {
-        errors.city = ValidationError.NON_EMPTY
       } else if (!isValidCity(input.city)) {
         errors.city = ValidationError.CITY_UNAVAILABLE
-      }
-    }
-
-    return Object.keys(errors).length ? errors : null
-  }
-
-  async validateGet(
-    input: any
-  ): Promise<ValidationErrors<GetInventoryInput> | null> {
-    const errors: ValidationErrors<GetInventoryInput> = {}
-
-    if (input.id === undefined) {
-      errors.id = ValidationError.REQUIRED
-    } else if (typeof input.id !== 'string') {
-      errors.id = ValidationError.STRING
-    } else if (input.id === '') {
-      errors.id = ValidationError.REQUIRED
-    }
-
-    return Object.keys(errors).length ? errors : null
-  }
-
-  async validateList(
-    input: any
-  ): Promise<ValidationErrors<ListInventoryInput> | null> {
-    const errors: ValidationErrors<ListInventoryInput> = {}
-
-    if (input.deleted !== undefined) {
-      if (typeof input.deleted !== 'boolean') {
-        errors.deleted = ValidationError.BOOLEAN
       }
     }
 
@@ -133,15 +129,15 @@ export class SimpleInventoryValidator implements InventoryValidator {
     } else if (typeof input.id !== 'string') {
       errors.id = ValidationError.STRING
     } else if (input.id === '') {
-      errors.id = ValidationError.REQUIRED
+      errors.id = ValidationError.NON_EMPTY
     }
 
     if (input.deletionMessage === undefined) {
-      errors.deletionMessage = ValidationError.REQUIRED
+      errors.deletionComment = ValidationError.REQUIRED
     } else if (typeof input.deletionMessage !== 'string') {
-      errors.deletionMessage = ValidationError.STRING
+      errors.deletionComment = ValidationError.STRING
     } else if (input.deletionMessage === '') {
-      errors.deletionMessage = ValidationError.REQUIRED
+      errors.deletionComment = ValidationError.NON_EMPTY
     }
 
     return Object.keys(errors).length ? errors : null

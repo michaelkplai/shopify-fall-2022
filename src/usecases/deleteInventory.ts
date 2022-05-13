@@ -6,12 +6,14 @@ import {
   ValidationErrors
 } from '../interfaces/InventoryValidator'
 
+type ServerError = boolean
+
 export async function deleteInventory(
   invRepo: InventoryRepository,
   invValidator: InventoryValidator,
   input: any
 ): Promise<
-  [Inventory | null, ValidationErrors<DeleteInventoryInput> | null, boolean]
+  [Inventory | null, ValidationErrors<DeleteInventoryInput> | null, ServerError]
 > {
   const validationError = await invValidator.validateDelete(input)
   if (validationError) {
@@ -21,7 +23,6 @@ export async function deleteInventory(
   const validatedInput = <DeleteInventoryInput>input
 
   const [inventory, serverError] = await invRepo.delete(validatedInput)
-
   if (serverError) {
     return [null, null, true]
   }

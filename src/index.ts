@@ -1,3 +1,4 @@
+// dotenv imports environment variables from the .env file
 import 'dotenv/config'
 
 import express from 'express'
@@ -18,16 +19,17 @@ const weatherApi = new OpenWeatherWeatherApi()
 const invValidator = new SimpleInventoryValidator()
 const invRepo = new SqliteInventoryRepository(weatherApi)
 
+// Main server function
 async function main() {
+  // Setup express server
   const PORT = process.env.PORT || 3000
-
   const app = express()
   app.use(bodyParser.json())
 
   // Connect to db
   await invRepo.open()
 
-  // API Routes
+  // Register REST API Routes
   app.post('/v1/inventory', async (req, res) => {
     const [inventory, validationErrors, serverError] = await createInventory(
       invRepo,
@@ -53,7 +55,7 @@ async function main() {
       { deleted: false }
     )
 
-    // Input is not user specified
+    // There shouldn't be validation errors since input is static
     if (validationErrors || serverError) {
       return res.status(500).json({ serverError: true })
     }
@@ -68,7 +70,7 @@ async function main() {
       { deleted: true }
     )
 
-    // Input is not user specified
+    // There shouldn't be validation errors since input is static
     if (validationErrors || serverError) {
       return res.status(500).json({ serverError: true })
     }
@@ -164,13 +166,16 @@ async function main() {
     return res.status(201).json({ inventory })
   })
 
+  // Start the server
   app.listen(PORT, () => {
     console.log(`Listening on port http://localhost:${PORT}`)
   })
 }
 
+// Start the main server process
 main().catch(console.error)
 
+// Close the database connection when the server is stopped
 process.on('SIGINT', async () => {
   await invRepo.close()
 })
