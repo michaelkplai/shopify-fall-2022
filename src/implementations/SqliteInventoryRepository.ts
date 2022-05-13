@@ -13,12 +13,13 @@ import {
   UpdateInventoryInput
 } from '../interfaces/InventoryInputs'
 import { InventoryRepository } from '../interfaces/InventoryRepository'
+import { WeatherApi } from '../interfaces/WeatherApi'
 
 export interface SqliteInventory {
   id: number
   name: string
   stock: number
-  city: string
+  city: City
   deleted: number
   deletion_comment: string
 }
@@ -31,12 +32,15 @@ function isSqliteInventory(row: any): row is SqliteInventory {
     typeof row.stock === 'number' &&
     typeof row.city === 'string' &&
     typeof row.deleted === 'number' &&
-    typeof row.deletion_comment === 'string'
+    typeof row.deletion_comment === 'string' &&
+    isValidCity(row.city)
   )
 }
 
 export class SqliteInventoryRepository implements InventoryRepository {
   private db!: Database<sqlite3.Database, sqlite3.Statement>
+
+  constructor(private weatherApi: WeatherApi) {}
 
   async open(): Promise<void> {
     try {
@@ -134,7 +138,7 @@ export class SqliteInventoryRepository implements InventoryRepository {
 
       if (!row) return [null, false]
 
-      const inventory = this.adapt(row)
+      const inventory = await this.adapt(row)
       if (!inventory) {
         console.error('Something went wrong adapting the inventory')
         return [null, true]
@@ -156,13 +160,15 @@ export class SqliteInventoryRepository implements InventoryRepository {
         deleted
       )
 
-      const adaptedRows = rows.map(this.adapt)
-      if (adaptedRows.includes(null)) {
+      console.log(rows)
+
+      const adaptedRows = await this.adaptMultiple(rows)
+      if (!adaptedRows) {
+        console.error('Something went wrong adapting the inventories')
         return [[], true]
       }
 
-      // Guarenteed to only contain Inventory objects since otherwise we return above
-      return [adaptedRows as Inventory[], false]
+      return [adaptedRows, false]
     } catch (e) {
       console.error('Something went wrong listing the inventory', e)
       return [[], true]
@@ -248,8 +254,15 @@ export class SqliteInventoryRepository implements InventoryRepository {
     }
   }
 
-  private adapt(row: any): Inventory | null {
-    if (!isSqliteInventory(row) || !isValidCity(row.city)) {
+  private async adapt(row: any): Promise<Inventory | null> {
+    if (!isSqliteInventory(row)) {
+      return null
+    }
+
+    const [cityWeather, serverError] = await this.weatherApi.getCurrentWeather(
+      cityMeta[row.city].coordinate
+    )
+    if (serverError) {
       return null
     }
 
@@ -260,9 +273,49 @@ export class SqliteInventoryRepository implements InventoryRepository {
       city: row.city,
       deleted: !!row.deleted,
       deletionComment: row.deletion_comment,
-      cityName: cityMeta[row.city].prettyName
+      cityName: cityMeta[row.city].prettyName,
+      cityWeather
     }
 
     return inv
+  }
+
+  private async adaptMultiple(rows: any[]): Promise<Inventory[] | null> {
+    for (const row of rows) {
+      if (!isSqliteInventory(row)) {
+        console.log(row)
+        console.error('Some rows do not match the expected schema')
+        return null
+      }
+    }
+    const validatedRows = rows as SqliteInventory[]
+
+    const weatherStatuses: Partial<Record<City, string>> = {}
+    const citiesToFetch = validatedRows.map((row) => row.city)
+    const uniqueCities = [...new Set(citiesToFetch)]
+
+    for (const city of uniqueCities) {
+      const [cityWeather, serverError] =
+        await this.weatherApi.getCurrentWeather(cityMeta[city].coordinate)
+      if (serverError) {
+        return null
+      }
+
+      weatherStatuses[city] = cityWeather
+    }
+
+    const adapted: Inventory[] = validatedRows.map((row) => {
+      return {
+        id: row.id.toString(),
+        name: row.name,
+        stock: row.stock,
+        city: row.city,
+        deleted: !!row.deleted,
+        deletionComment: row.deletion_comment,
+        cityName: cityMeta[row.city].prettyName,
+        cityWeather: weatherStatuses[row.city] || ''
+      }
+    })
+    return adapted
   }
 }

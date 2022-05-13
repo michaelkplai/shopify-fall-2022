@@ -1,3 +1,5 @@
+import 'dotenv/config'
+
 import express from 'express'
 import bodyParser from 'body-parser'
 
@@ -14,7 +16,7 @@ import { updateInventory } from './usecases/updateInventory'
 // Construct implementations classes for dependency injection
 const weatherApi = new OpenWeatherWeatherApi()
 const invValidator = new SimpleInventoryValidator()
-const invRepo = new SqliteInventoryRepository()
+const invRepo = new SqliteInventoryRepository(weatherApi)
 
 async function main() {
   const PORT = process.env.PORT || 3000

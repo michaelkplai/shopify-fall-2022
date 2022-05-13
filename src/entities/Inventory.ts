@@ -7,6 +7,6 @@ export interface Inventory {
   city: City
   deleted: boolean
   deletionComment: string
-  cityName?: string
-  cityWeather?: string
+  cityName: string
+  cityWeather: string
 }
