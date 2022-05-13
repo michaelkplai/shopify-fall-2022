@@ -54,7 +54,7 @@ export class SqliteInventoryRepository implements InventoryRepository {
         stock INTEGER NOT NULL,
         city TEXT NOT NULL,
         deleted INTEGER NOT NULL,
-        deletion_comment TEXT NULL
+        deletion_comment TEXT NOT NULL
       );`)
     } catch (e) {
       console.error('Something went wrong opening the database', e)
@@ -268,6 +268,7 @@ export class SqliteInventoryRepository implements InventoryRepository {
 
   private async adapt(row: any): Promise<Inventory | null> {
     if (!isSqliteInventory(row)) {
+      console.log(row)
       console.error('Row does not match the expected schema')
       return null
     }

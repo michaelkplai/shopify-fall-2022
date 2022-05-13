@@ -126,7 +126,7 @@ async function main() {
     const [inventory, validationErrors, serverError] = await deleteInventory(
       invRepo,
       invValidator,
-      { deletionMessage: req.body.deletionMessage, id: req.params.id }
+      { deletionComment: req.body.deletionComment, id: req.params.id }
     )
 
     if (serverError) {
@@ -144,7 +144,7 @@ async function main() {
     return res.status(200).json({ inventory })
   })
 
-  app.post('/v1/inventory/:id/deleted', async (req, res) => {
+  app.post('/v1/inventory/deleted/:id', async (req, res) => {
     const [inventory, validationErrors, serverError] = await restoreInventory(
       invRepo,
       invValidator,

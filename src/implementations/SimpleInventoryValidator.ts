@@ -132,11 +132,11 @@ export class SimpleInventoryValidator implements InventoryValidator {
       errors.id = ValidationError.NON_EMPTY
     }
 
-    if (input.deletionMessage === undefined) {
+    if (input.deletionComment === undefined) {
       errors.deletionComment = ValidationError.REQUIRED
-    } else if (typeof input.deletionMessage !== 'string') {
+    } else if (typeof input.deletionComment !== 'string') {
       errors.deletionComment = ValidationError.STRING
-    } else if (input.deletionMessage === '') {
+    } else if (input.deletionComment === '') {
       errors.deletionComment = ValidationError.NON_EMPTY
     }
 
