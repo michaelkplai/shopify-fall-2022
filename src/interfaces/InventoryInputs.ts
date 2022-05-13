@@ -26,6 +26,6 @@ export interface DeleteInventoryInput {
   deletionMessage: string
 }
 
-export interface UndeleteInventoryInput {
+export interface RestoreInventoryInput {
   id: string
 }

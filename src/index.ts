@@ -8,6 +8,8 @@ import { createInventory } from './usecases/createInventory'
 import { getInventory } from './usecases/getInventory'
 import { listInventory } from './usecases/listInventory'
 import { deleteInventory } from './usecases/deleteInventory'
+import { restoreInventory } from './usecases/restoreInventory'
+import { updateInventory } from './usecases/updateInventory'
 
 // Construct implementations classes for dependency injection
 const weatherApi = new OpenWeatherWeatherApi()
@@ -94,7 +96,27 @@ async function main() {
     return res.status(200).json({ inventory })
   })
 
-  // app.patch('/v1/inventory/:id')
+  app.patch('/v1/inventory/:id', async (req, res) => {
+    const [inventory, validationErrors, serverError] = await updateInventory(
+      invRepo,
+      invValidator,
+      { id: req.params.id, ...req.body }
+    )
+
+    if (serverError) {
+      return res.status(500).json({ serverError: true })
+    }
+
+    if (validationErrors) {
+      return res.status(400).json({ validationErrors })
+    }
+
+    if (!inventory) {
+      return res.status(404).json({ notFound: true })
+    }
+
+    return res.status(200).json({ inventory })
+  })
 
   app.delete('/v1/inventory/:id', async (req, res) => {
     const [inventory, validationErrors, serverError] = await deleteInventory(
@@ -118,7 +140,27 @@ async function main() {
     return res.status(200).json({ inventory })
   })
 
-  // app.post('/v1/inventory/:id/deleted')
+  app.post('/v1/inventory/:id/deleted', async (req, res) => {
+    const [inventory, validationErrors, serverError] = await restoreInventory(
+      invRepo,
+      invValidator,
+      { id: req.params.id }
+    )
+
+    if (serverError) {
+      return res.status(500).json({ serverError: true })
+    }
+
+    if (validationErrors) {
+      return res.status(400).json({ validationErrors })
+    }
+
+    if (!inventory) {
+      return res.status(404).json({ notFound: true })
+    }
+
+    return res.status(201).json({ inventory })
+  })
 
   app.listen(PORT, () => {
     console.log(`Listening on port http://localhost:${PORT}`)

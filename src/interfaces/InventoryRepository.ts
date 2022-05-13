@@ -4,7 +4,7 @@ import {
   DeleteInventoryInput,
   GetInventoryInput,
   ListInventoryInput,
-  UndeleteInventoryInput,
+  RestoreInventoryInput,
   UpdateInventoryInput
 } from './InventoryInputs'
 
@@ -17,6 +17,6 @@ export interface InventoryRepository {
   list(input: ListInventoryInput): Promise<[Inventory[], ServerError]>
   delete(input: DeleteInventoryInput): Promise<[Inventory | null, ServerError]>
   restore(
-    input: UndeleteInventoryInput
+    input: RestoreInventoryInput
   ): Promise<[Inventory | null, ServerError]>
 }

@@ -9,7 +9,7 @@ import {
   DeleteInventoryInput,
   GetInventoryInput,
   ListInventoryInput,
-  UndeleteInventoryInput,
+  RestoreInventoryInput,
   UpdateInventoryInput
 } from '../interfaces/InventoryInputs'
 import { InventoryRepository } from '../interfaces/InventoryRepository'
@@ -89,8 +89,40 @@ export class SqliteInventoryRepository implements InventoryRepository {
     }
   }
 
-  update(input: UpdateInventoryInput): Promise<[Inventory | null, boolean]> {
-    throw new Error('Method not implemented.')
+  async update(
+    input: UpdateInventoryInput
+  ): Promise<[Inventory | null, boolean]> {
+    let rowsChanged = 0
+
+    try {
+      // Perform partial update
+      const res = await this.db.run(
+        `UPDATE
+          inventory
+        SET
+          name = COALESCE(?, name), stock = COALESCE(?, stock), city = COALESCE(?, city)
+        WHERE
+          inventory.id = ?;`,
+        [input.name, input.stock, input.city, input.id]
+      )
+
+      rowsChanged = res.changes || 0
+    } catch (e) {
+      console.error('Something went wrong updating the inventory', e)
+      return [null, true]
+    }
+
+    if (rowsChanged < 1) {
+      return [null, false]
+    }
+
+    const [inventory, serverError] = await this.fetch({ id: input.id })
+    if (serverError || !inventory) {
+      console.error('Something went wrong fetching the newly updated inventory')
+      return [null, true]
+    }
+
+    return [inventory, false]
   }
 
   async fetch(input: GetInventoryInput): Promise<[Inventory | null, boolean]> {
@@ -135,8 +167,6 @@ export class SqliteInventoryRepository implements InventoryRepository {
       console.error('Something went wrong listing the inventory', e)
       return [[], true]
     }
-
-    throw new Error('Method not implemented.')
   }
 
   async delete(
@@ -177,8 +207,36 @@ export class SqliteInventoryRepository implements InventoryRepository {
     return [inventory, false]
   }
 
-  restore(input: UndeleteInventoryInput): Promise<[Inventory | null, boolean]> {
-    throw new Error('Method not implemented.')
+  async restore(
+    input: RestoreInventoryInput
+  ): Promise<[Inventory | null, boolean]> {
+    let rowsChanged = 0
+
+    try {
+      const res = await this.db.run(
+        `UPDATE inventory
+        SET deleted = 0, deletion_comment = ''
+        WHERE id = ?;`,
+        [input.id]
+      )
+
+      rowsChanged = res.changes || 0
+    } catch (e) {
+      console.error('Something went wrong updating the inventory', e)
+      return [null, true]
+    }
+
+    if (rowsChanged < 1) {
+      return [null, false]
+    }
+
+    const [inventory, serverError] = await this.fetch({ id: input.id })
+    if (serverError || !inventory) {
+      console.error('Something went wrong fetching the newly updated inventory')
+      return [null, true]
+    }
+
+    return [inventory, false]
   }
 
   async close() {

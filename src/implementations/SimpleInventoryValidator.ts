@@ -5,7 +5,7 @@ import {
   GetInventoryInput,
   ListInventoryInput,
   DeleteInventoryInput,
-  UndeleteInventoryInput
+  RestoreInventoryInput
 } from '../interfaces/InventoryInputs'
 import {
   InventoryValidator,
@@ -24,7 +24,7 @@ export class SimpleInventoryValidator implements InventoryValidator {
     } else if (typeof input.name !== 'string') {
       errors.name = ValidationError.STRING
     } else if (input.name === '') {
-      errors.name = ValidationError.REQUIRED
+      errors.name = ValidationError.NON_EMPTY
     }
 
     if (input.stock === undefined) {
@@ -43,7 +43,7 @@ export class SimpleInventoryValidator implements InventoryValidator {
     } else if (typeof input.city !== 'string') {
       errors.city = ValidationError.STRING
     } else if (input.city === '') {
-      errors.city = ValidationError.REQUIRED
+      errors.city = ValidationError.NON_EMPTY
     } else if (!isValidCity(input.city)) {
       errors.city = ValidationError.CITY_UNAVAILABLE
     }
@@ -51,10 +51,46 @@ export class SimpleInventoryValidator implements InventoryValidator {
     return Object.keys(errors).length ? errors : null
   }
 
-  validateUpdate(
-    input: UpdateInventoryInput
+  async validateUpdate(
+    input: any
   ): Promise<ValidationErrors<UpdateInventoryInput> | null> {
-    throw new Error('Method not implemented.')
+    const errors: ValidationErrors<UpdateInventoryInput> = {}
+
+    if (input.id === undefined) {
+      errors.id = ValidationError.REQUIRED
+    } else if (typeof input.id !== 'string') {
+      errors.id = ValidationError.STRING
+    } else if (input.id === '') {
+      errors.id = ValidationError.NON_EMPTY
+    }
+
+    if (input.name !== undefined) {
+      if (typeof input.name !== 'string') {
+        errors.name = ValidationError.STRING
+      } else if (input.name === '') {
+        errors.name = ValidationError.NON_EMPTY
+      }
+    }
+
+    if (input.stock !== undefined) {
+      if (typeof input.stock !== 'number' || !Number.isInteger(input.stock)) {
+        errors.stock = ValidationError.INT
+      } else if (input.stock < 0) {
+        errors.stock = ValidationError.NON_NEGATIVE
+      }
+    }
+
+    if (input.city !== undefined) {
+      if (typeof input.city !== 'string') {
+        errors.city = ValidationError.STRING
+      } else if (input.city === '') {
+        errors.city = ValidationError.NON_EMPTY
+      } else if (!isValidCity(input.city)) {
+        errors.city = ValidationError.CITY_UNAVAILABLE
+      }
+    }
+
+    return Object.keys(errors).length ? errors : null
   }
 
   async validateGet(
@@ -111,9 +147,19 @@ export class SimpleInventoryValidator implements InventoryValidator {
     return Object.keys(errors).length ? errors : null
   }
 
-  validateUndelete(
-    input: UndeleteInventoryInput
-  ): Promise<ValidationErrors<UndeleteInventoryInput> | null> {
-    throw new Error('Method not implemented.')
+  async validateRestore(
+    input: any
+  ): Promise<ValidationErrors<RestoreInventoryInput> | null> {
+    const errors: ValidationErrors<RestoreInventoryInput> = {}
+
+    if (input.id === undefined) {
+      errors.id = ValidationError.REQUIRED
+    } else if (typeof input.id !== 'string') {
+      errors.id = ValidationError.STRING
+    } else if (input.id === '') {
+      errors.id = ValidationError.NON_EMPTY
+    }
+
+    return Object.keys(errors).length ? errors : null
   }
 }
