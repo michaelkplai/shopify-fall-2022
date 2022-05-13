@@ -3,9 +3,271 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>Fall 2022 Shopify Internship Challenge</title>
   </head>
   <body>
-    <h1>Test</h1>
+    <main x-data="inventory">
+      <h1>Inventory Manager</h1>
+
+      <div class="inventory-list">
+        <h2>Inventory Items</h2>
+
+        <label>
+          <input
+            type="checkbox"
+            x-model="deleted"
+            @change="resetDeleteForm && fetch"
+          />
+          Show Deleted Items
+        </label>
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Stock</th>
+              <th>City</th>
+              <th>Weather</th>
+              <th x-show="deleted">Deletion Reason</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="item in items" :key="item.id">
+              <tr>
+                <td x-text="item.id"></td>
+                <td x-text="item.name"></td>
+                <td x-text="item.stock"></td>
+                <td x-text="item.cityName"></td>
+                <td x-text="item.cityWeather"></td>
+                <td x-show="deleted" x-text="item.deletionComment"></td>
+                <td>
+                  <button
+                    @click="(showDeleteForm = true) && (deleteId = item.id)"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="delete-form" x-show="showDeleteForm">
+        <p>
+          Showing form to <strong>delete</strong> item with ID:
+          <span x-text="deleteId"></span>
+        </p>
+        <form @submit.prevent="submitDelete(deleteId)">
+          <p>
+            <label>
+              Deletion Reason:
+              <input type="text" x-model="deletionComment" />
+            </label>
+
+            <span
+              x-show="deleteValidationErrors.deletionComment"
+              class="error"
+              x-text="deleteValidationErrors.deletionComment"
+            ></span>
+          </p>
+
+          <button type="submit">Delete</button>
+          <button type="button" @click.submit="resetDeleteForm()">
+            Cancel
+          </button>
+        </form>
+      </div>
+
+      <div class="create-form">
+        <h2>Add Items</h2>
+
+        <form @submit.prevent="submitCreate()">
+          <p>
+            <label>
+              Name:
+              <input type="text" x-model="create.name" />
+            </label>
+
+            <span
+              x-show="create.validationErrors.name"
+              class="error"
+              x-text="create.validationErrors.name"
+            ></span>
+          </p>
+
+          <p>
+            <label>
+              Stock:
+              <input type="number" x-model.number="create.stock" />
+            </label>
+
+            <span
+              x-show="create.validationErrors.stock"
+              class="error"
+              x-text="create.validationErrors.stock"
+            ></span>
+          </p>
+
+          <p>
+            <label>
+              City:
+              <select x-model="create.city">
+                <option value="OTTAWA">Ottawa</option>
+                <option value="TORONTO">Toronto</option>
+                <option value="VANCOUVER">Vancouver</option>
+                <option value="NEW_YORK">New York</option>
+                <option value="LONDON">London</option>
+              </select>
+            </label>
+
+            <span
+              x-show="create.validationErrors.city"
+              class="error"
+              x-text="create.validationErrors.city"
+            ></span>
+          </p>
+
+          <button type="submit">Submit</button>
+          <button type="reset">Reset</button>
+        </form>
+      </div>
+    </main>
+
+    <script>
+      function showError() {
+        alert('Something went wrong please try again later')
+      }
+
+      document.addEventListener('alpine:init', () => {
+        Alpine.data('inventory', () => ({
+          async init() {
+            await this.fetch(this.deleted)
+          },
+
+          // List
+          items: [],
+          deleted: false,
+          async fetch() {
+            const uri = this.deleted ? '/v1/inventory/deleted' : '/v1/inventory'
+
+            try {
+              const res = await fetch(uri)
+
+              if (!res.ok) {
+                console.error(
+                  'Something went wrong fetching inventory items',
+                  res
+                )
+                showError()
+                return
+              }
+
+              const data = await res.json()
+              console.log(data)
+              this.items = data.inventories
+            } catch (e) {
+              console.error('Something went wrong fetching inventory items', e)
+              showError()
+            }
+          },
+
+          // Create Item Form
+          create: {
+            name: '',
+            stock: 1,
+            city: 'OTTAWA',
+            validationErrors: {}
+          },
+          resetCreate() {
+            this.name = ''
+            this.stock = 1
+            this.city = ''
+            this.create.validationErrors = {}
+          },
+          async submitCreate() {
+            try {
+              console.log(this.create)
+              const res = await fetch(`/v1/inventory`, {
+                method: 'POST',
+                body: JSON.stringify({
+                  name: this.create.name,
+                  stock:
+                    this.create.stock === '' ? undefined : this.create.stock,
+                  city: this.create.city
+                }),
+                headers: {
+                  'Content-Type': 'application/json'
+                }
+              })
+
+              const data = await res.json()
+
+              if (res.status === 400) {
+                this.create.validationErrors = data.validationErrors
+              } else if (res.status === 201) {
+                this.resetCreate()
+                this.fetch(this.deleted)
+              } else {
+                showError()
+              }
+            } catch (e) {
+              console.error('Something went wrong creating inventory item', e)
+              showError()
+            }
+          },
+
+          // Delete Item Form
+          showDeleteForm: false,
+          deleteId: '',
+          deletionComment: '',
+          deleteValidationErrors: {},
+          resetDeleteForm() {
+            this.showDeleteForm = false
+            this.deleteId = ''
+            this.deletionComment = ''
+            this.deleteValidationErrors = {}
+          },
+          async submitDelete(id) {
+            try {
+              const res = await fetch(`/v1/inventory/${id}`, {
+                method: 'DELETE',
+                body: JSON.stringify({
+                  deletionComment: this.deletionComment
+                }),
+                headers: {
+                  'Content-Type': 'application/json'
+                }
+              })
+
+              const data = await res.json()
+
+              if (res.status === 400) {
+                this.deleteValidationErrors = data.validationErrors
+              } else if (res.status === 200) {
+                this.fetch(this.deleted)
+                this.resetDeleteForm()
+              } else {
+                showError()
+              }
+            } catch (e) {
+              console.error('Something went wrong deleting inventory item', e)
+              showError()
+            }
+          }
+        }))
+      })
+    </script>
+
+    <style>
+      .error {
+        color: red;
+      }
+    </style>
+
+    <script src="//unpkg.com/alpinejs" defer></script>
+    <link rel="stylesheet" href="//cdn.simplecss.org/simple.min.css" />
   </body>
 </html>

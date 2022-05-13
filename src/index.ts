@@ -1,6 +1,8 @@
 // dotenv imports environment variables from the .env file
 import 'dotenv/config'
 
+import path from 'path'
+
 import express from 'express'
 import bodyParser from 'body-parser'
 
@@ -164,6 +166,10 @@ async function main() {
     }
 
     return res.status(201).json({ inventory })
+  })
+
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../static/index.html'))
   })
 
   // Start the server
