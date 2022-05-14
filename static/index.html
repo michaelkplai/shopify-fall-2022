@@ -44,9 +44,13 @@
                 <td x-show="deleted" x-text="item.deletionComment"></td>
                 <td>
                   <button
-                    @click="(showDeleteForm = true) && (deleteId = item.id)"
+                    x-show="!deleted"
+                    @click="(showDeleteForm = true) && (deleteId = item.id) && (document.getElementById('after-table').scrollIntoView())"
                   >
                     Delete
+                  </button>
+                  <button x-show="deleted" @click="submitRestore(item.id)">
+                    Restore
                   </button>
                 </td>
               </tr>
@@ -55,7 +59,9 @@
         </table>
       </div>
 
-      <div class="delete-form" x-show="showDeleteForm">
+      <div id="after-table"></div>
+
+      <div id="delete-form" x-show="showDeleteForm">
         <p>
           Showing form to <strong>delete</strong> item with ID:
           <span x-text="deleteId"></span>
@@ -254,6 +260,25 @@
               }
             } catch (e) {
               console.error('Something went wrong deleting inventory item', e)
+              showError()
+            }
+          },
+
+          // Restore Item
+          async submitRestore(id) {
+            try {
+              const res = await fetch(`/v1/inventory/deleted/${id}`, {
+                method: 'POST'
+              })
+
+              if (res.status === 201) {
+                this.fetch(this.deleted)
+                // this.resetDeleteForm()
+              } else {
+                showError()
+              }
+            } catch (e) {
+              console.error('Something went wrong restoring inventory item', e)
               showError()
             }
           }
