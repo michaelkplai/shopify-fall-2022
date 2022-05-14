@@ -16,7 +16,7 @@
           <input
             type="checkbox"
             x-model="deleted"
-            @change="resetDeleteForm && fetch"
+            @change="fetch() && resetForms()"
           />
           Show Deleted Items
         </label>
@@ -45,17 +45,13 @@
                 <td>
                   <button
                     x-show="!deleted"
-                    @click="(update.show = true) && (update.id = item.id) && (update.name = item.name) && (update.stock = item.stock) && (update.city = item.city) && (document.getElementById('after-table').scrollIntoView())"
+                    @click="updateClick(item.id, item.name, item.stock, item.city)"
                   >
                     Update
                   </button>
-                  <button
-                    x-show="!deleted"
-                    @click="(showDeleteForm = true) && (deleteId = item.id) && (document.getElementById('after-table').scrollIntoView())"
-                  >
+                  <button x-show="!deleted" @click="deleteClick(item.id)">
                     Delete
                   </button>
-
                   <button x-show="deleted" @click="submitRestore(item.id)">
                     Restore
                   </button>
@@ -68,22 +64,22 @@
 
       <div id="after-table"></div>
 
-      <div id="delete-form" x-show="showDeleteForm">
+      <div id="delete-form" x-show="deleteForm.show">
         <p>
           Showing form to <strong>delete</strong> item with ID:
-          <span x-text="deleteId"></span>
+          <span x-text="deleteForm.id"></span>
         </p>
-        <form @submit.prevent="submitDelete(deleteId)">
+        <form @submit.prevent="submitDelete()">
           <p>
             <label>
               Deletion Reason:
-              <input type="text" x-model="deletionComment" />
+              <input type="text" x-model="deleteForm.comment" />
             </label>
 
             <span
-              x-show="deleteValidationErrors.deletionComment"
+              x-show="deleteForm.validationErrors.deletionComment"
               class="error"
-              x-text="deleteValidationErrors.deletionComment"
+              x-text="deleteForm.validationErrors.deletionComment"
             ></span>
           </p>
 
@@ -147,6 +143,9 @@
           </p>
 
           <button type="submit">Submit</button>
+          <button type="button" @click.submit="resetUpdateForm()">
+            Cancel
+          </button>
         </form>
       </div>
 
@@ -206,19 +205,23 @@
     </main>
 
     <script>
-      function showError() {
-        alert('Something went wrong please try again later')
+      function showError(msg) {
+        alert(`Something went wrong ${msg}. Please try again later.`)
       }
 
       document.addEventListener('alpine:init', () => {
         Alpine.data('inventory', () => ({
           async init() {
-            await this.fetch(this.deleted)
+            await this.fetch()
+          },
+          resetForms() {
+            this.resetDeleteForm()
+            this.resetUpdateForm()
           },
 
           // List
           items: [],
-          deleted: false,
+          deleted: false, // Whether to show deleted items
           async fetch() {
             const uri = this.deleted ? '/v1/inventory/deleted' : '/v1/inventory'
 
@@ -230,16 +233,15 @@
                   'Something went wrong fetching inventory items',
                   res
                 )
-                showError()
+                showError('fetching inventory items')
                 return
               }
 
               const data = await res.json()
-              console.log(data)
               this.items = data.inventories
             } catch (e) {
               console.error('Something went wrong fetching inventory items', e)
-              showError()
+              showError('fetching inventory items')
             }
           },
 
@@ -278,7 +280,7 @@
                 this.create.validationErrors = data.validationErrors
               } else if (res.status === 201) {
                 this.resetCreate()
-                this.fetch(this.deleted)
+                this.fetch()
               } else {
                 showError()
               }
@@ -289,22 +291,33 @@
           },
 
           // Delete Item Form
-          showDeleteForm: false,
-          deleteId: '',
-          deletionComment: '',
-          deleteValidationErrors: {},
-          resetDeleteForm() {
-            this.showDeleteForm = false
-            this.deleteId = ''
-            this.deletionComment = ''
-            this.deleteValidationErrors = {}
+          deleteForm: {
+            show: false,
+            id: '',
+            comment: '',
+            validationErrors: {}
           },
-          async submitDelete(id) {
+          deleteClick(id) {
+            this.resetForms()
+
+            this.deleteForm.show = true
+
+            this.deleteForm.id = id
+
+            document.getElementById('after-table').scrollIntoView()
+          },
+          resetDeleteForm() {
+            this.deleteForm.show = false
+            this.deleteForm.id = ''
+            this.deleteForm.comment = ''
+            this.deleteForm.validationErrors = {}
+          },
+          async submitDelete() {
             try {
-              const res = await fetch(`/v1/inventory/${id}`, {
+              const res = await fetch(`/v1/inventory/${this.deleteForm.id}`, {
                 method: 'DELETE',
                 body: JSON.stringify({
-                  deletionComment: this.deletionComment
+                  deletionComment: this.deleteForm.comment
                 }),
                 headers: {
                   'Content-Type': 'application/json'
@@ -314,16 +327,16 @@
               const data = await res.json()
 
               if (res.status === 400) {
-                this.deleteValidationErrors = data.validationErrors
+                this.deleteForm.validationErrors = data.validationErrors
               } else if (res.status === 200) {
-                this.fetch(this.deleted)
+                this.fetch()
                 this.resetDeleteForm()
               } else {
-                showError()
+                showError('deleting inventory item')
               }
             } catch (e) {
               console.error('Something went wrong deleting inventory item', e)
-              showError()
+              showError('deleting inventory item')
             }
           },
 
@@ -335,14 +348,14 @@
               })
 
               if (res.status === 201) {
-                this.fetch(this.deleted)
+                this.fetch()
                 // this.resetDeleteForm()
               } else {
-                showError()
+                showError('restoring inventory item')
               }
             } catch (e) {
               console.error('Something went wrong restoring inventory item', e)
-              showError()
+              showError('restoring inventory item')
             }
           },
 
@@ -355,6 +368,18 @@
             name: '',
             stock: 1,
             city: 'OTTAWA'
+          },
+          updateClick(id, name, stock, city) {
+            this.resetForms()
+
+            this.update.show = true
+
+            this.update.id = id
+            this.update.name = name
+            this.update.stock = stock
+            this.update.city = city
+
+            document.getElementById('after-table').scrollIntoView()
           },
           resetUpdateForm() {
             this.update.validationErrors = {}
@@ -386,13 +411,13 @@
                 this.update.validationErrors = data.validationErrors
               } else if (res.status === 200) {
                 this.resetUpdateForm()
-                this.fetch(this.deleted)
+                this.fetch()
               } else {
-                showError()
+                showError('updating inventory item')
               }
             } catch (e) {
               console.error('Something went wrong updating inventory item', e)
-              showError()
+              showError('updating inventory item')
             }
           }
         }))
@@ -406,6 +431,6 @@
     </style>
 
     <script src="//unpkg.com/alpinejs" defer></script>
-    <link rel="stylesheet" href="//cdn.simplecss.org/simple.min.css" />
+    <link rel="stylesheet" href="//unpkg.com/simpledotcss/simple.min.css" />
   </body>
 </html>
