@@ -4,7 +4,7 @@ This is my submissions for Shopify's Fall 2022 Internship Challenge for **Produc
 
 I've implemented the inventory & weather CRUD API using a REST and created a simple frontend. The additional feature I've chosen to implement is **deletion comments and undeletion**.
 
-**Demo**: [Replit]()
+**Demo**: [Replit](https://replit.com/@MichaelLai9/shopify-fall-2022)
 
 ## Design Decisions
 
