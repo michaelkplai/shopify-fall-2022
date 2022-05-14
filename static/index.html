@@ -45,10 +45,17 @@
                 <td>
                   <button
                     x-show="!deleted"
+                    @click="(update.show = true) && (update.id = item.id) && (update.name = item.name) && (update.stock = item.stock) && (update.city = item.city) && (document.getElementById('after-table').scrollIntoView())"
+                  >
+                    Update
+                  </button>
+                  <button
+                    x-show="!deleted"
                     @click="(showDeleteForm = true) && (deleteId = item.id) && (document.getElementById('after-table').scrollIntoView())"
                   >
                     Delete
                   </button>
+
                   <button x-show="deleted" @click="submitRestore(item.id)">
                     Restore
                   </button>
@@ -84,6 +91,62 @@
           <button type="button" @click.submit="resetDeleteForm()">
             Cancel
           </button>
+        </form>
+      </div>
+
+      <div id="update-form" x-show="update.show">
+        <p>
+          Showing form to <strong>update</strong> item with ID:
+          <span x-text="update.id"></span>
+        </p>
+
+        <form @submit.prevent="submitUpdate()">
+          <p>
+            <label>
+              Name:
+              <input type="text" x-model="update.name" />
+            </label>
+
+            <span
+              x-show="update.validationErrors.name"
+              class="error"
+              x-text="update.validationErrors.name"
+            ></span>
+          </p>
+
+          <p>
+            <label>
+              Stock:
+              <input type="number" x-model.number="update.stock" />
+            </label>
+
+            <span
+              x-show="update.validationErrors.stock"
+              class="error"
+              x-text="update.validationErrors.stock"
+            ></span>
+          </p>
+
+          <p>
+            <label>
+              City:
+              <select x-model="update.city">
+                <option value="OTTAWA">Ottawa</option>
+                <option value="TORONTO">Toronto</option>
+                <option value="VANCOUVER">Vancouver</option>
+                <option value="NEW_YORK">New York</option>
+                <option value="LONDON">London</option>
+              </select>
+            </label>
+
+            <span
+              x-show="update.validationErrors.city"
+              class="error"
+              x-text="update.validationErrors.city"
+            ></span>
+          </p>
+
+          <button type="submit">Submit</button>
         </form>
       </div>
 
@@ -279,6 +342,56 @@
               }
             } catch (e) {
               console.error('Something went wrong restoring inventory item', e)
+              showError()
+            }
+          },
+
+          // Update form
+          update: {
+            validationErrors: {},
+            show: false,
+
+            id: '',
+            name: '',
+            stock: 1,
+            city: 'OTTAWA'
+          },
+          resetUpdateForm() {
+            this.update.validationErrors = {}
+            this.update.show = false
+
+            this.update.id = ''
+            this.update.name = ''
+            this.update.stock = 1
+            this.update.city = 'OTTAWA'
+          },
+          async submitUpdate() {
+            try {
+              const res = await fetch(`/v1/inventory/${this.update.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                  name: this.update.name,
+                  stock:
+                    this.update.stock === '' ? undefined : this.update.stock,
+                  city: this.update.city
+                }),
+                headers: {
+                  'Content-Type': 'application/json'
+                }
+              })
+
+              const data = await res.json()
+
+              if (res.status === 400) {
+                this.update.validationErrors = data.validationErrors
+              } else if (res.status === 200) {
+                this.resetUpdateForm()
+                this.fetch(this.deleted)
+              } else {
+                showError()
+              }
+            } catch (e) {
+              console.error('Something went wrong updating inventory item', e)
               showError()
             }
           }
